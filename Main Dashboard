@@ -1,0 +1,861 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+<title>Smart Energy Dashboard</title>
+
+<script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
+<script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-auth.js"></script>
+<script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+<script>
+
+var firebaseConfig={
+apiKey:"AIzaSyCDWJPUWHt1ntqz3XDKkc97N1USr_0XX90",
+authDomain:"pzieoelcetric00.firebaseapp.com",
+databaseURL:"https://pzieoelcetric00-default-rtdb.asia-southeast1.firebasedatabase.app"
+};
+
+firebase.initializeApp(firebaseConfig);
+
+firebase.auth().onAuthStateChanged(function(user){
+
+if(!user){
+window.location="login.html";
+}
+
+});
+
+</script>
+
+<style>
+
+body{
+margin:0;
+font-family:'Segoe UI',sans-serif;
+background:linear-gradient(135deg,#0f2027,#203a43,#2c5364);
+color:white;
+display:flex;
+justify-content:center;
+align-items:center;
+min-height:100vh;
+}
+
+#themeBtn{
+position:fixed;
+top:20px;
+left:20px;
+background:rgba(255,255,255,0.2);
+color:white;
+border:none;
+border-radius:50%;
+width:50px;
+height:50px;
+font-size:22px;
+cursor:pointer;
+backdrop-filter:blur(10px);
+
+/* CENTER FIX */
+display:flex;
+align-items:center;
+justify-content:center;
+}
+
+.container{
+text-align:center;
+width:90%;
+max-width:1000px;
+}
+
+.status{
+display:inline-block;
+padding:6px 15px;
+background:#ff0000;
+border-radius:20px;
+font-size:14px;
+margin-bottom:30px;
+transition:0.3s;
+}
+
+.cards{
+display:grid;
+grid-template-columns:repeat(auto-fit,minmax(200px,1fr));
+gap:20px;
+}
+
+.card{
+background:rgba(255,255,255,0.1);
+padding:30px;
+border-radius:15px;
+backdrop-filter:blur(10px);
+transition:0.3s;
+border:1px solid rgba(255,255,255,0.1);
+box-shadow:0 10px 25px rgba(0,0,0,0.3);
+}
+
+.card:hover{
+transform:scale(1.07);
+}
+
+.card h2{
+margin:0;
+font-size:40px;
+}
+
+.graph-buttons{
+margin-top:40px;
+}
+
+.graph-buttons button{
+margin:10px;
+padding:12px 25px;
+border:none;
+border-radius:30px;
+background:#1ecb6b;
+color:white;
+font-size:16px;
+cursor:pointer;
+}
+
+.graph-box{
+width:90%;
+max-width:900px;
+margin:40px auto;
+padding:20px;
+background:rgba(255,255,255,0.05);
+border-radius:15px;
+box-shadow:0 0 20px rgba(0,0,0,0.3);
+display:none;
+}
+
+canvas{
+width:100% !important;
+height:300px !important;
+}
+
+.historyBox{
+margin-top:40px;
+}
+
+input{
+padding:10px;
+border-radius:8px;
+border:none;
+}
+
+button{
+padding:10px 20px;
+border:none;
+border-radius:8px;
+background:#00c853;
+color:white;
+cursor:pointer;
+margin-left:10px;
+}
+
+/* Light Mode */
+
+body.light-mode {
+  background: #f5f5f5;
+  color: #222;
+}
+
+body.light-mode .card {
+  background: white;
+  color: black;
+}
+
+body.light-mode .chart-container {
+  background: white;
+}
+
+body.light-mode .graph-box{
+background:white;
+color:black;
+}
+
+body.light-mode .graph-buttons button{
+background:#000000;
+color:white;
+}
+
+.graph-box{
+transition:0.3s;
+}
+
+.graph-box.active{
+box-shadow:0 0 30px rgba(34,197,94,0.8);
+}
+
+.graph-box{
+    display:none;
+    transform:scale(0.8);
+    opacity:0;
+    transition:all 0.4s ease;
+}
+
+.graph-box.show{
+    transform:scale(1);
+    opacity:1;
+}
+.profile-menu{
+position:fixed;
+top:20px;
+right:20px;
+z-index:1000;
+}
+
+.profile-icon{
+width:40px;
+height:40px;
+border-radius:50%;
+background:#1ecb6b;
+display:flex;
+align-items:center;
+justify-content:center;
+cursor:pointer;
+font-size:20px;
+}
+
+.profile-dropdown{
+position:absolute;
+right:0;
+top:50px;
+background:white;
+color:black;
+width:180px;
+border-radius:10px;
+box-shadow:0 5px 15px rgba(0,0,0,0.3);
+padding:10px;
+display:none;
+}
+
+.profile-dropdown p{
+font-size:14px;
+margin:5px 0;
+word-break:break-all;
+}
+
+.profile-dropdown{
+position:absolute;
+right:0;
+top:50px;
+background:white;
+color:black;
+width:200px;
+border-radius:12px;
+box-shadow:0 5px 15px rgba(0,0,0,0.3);
+padding:15px;
+display:none;
+text-align:center;
+}
+
+.profile-dropdown p{
+margin:10px 0;
+font-size:14px;
+word-break:break-all;
+text-align:center;
+}
+
+body{
+animation:fadeIn 0.8s ease;
+}
+
+@keyframes fadeIn{
+from{
+opacity:0;
+transform:translateY(20px);
+}
+to{
+opacity:1;
+transform:translateY(0);
+}
+}
+
+
+</style>
+</head>
+
+<body>
+
+<button id="themeBtn" onclick="toggleTheme()">🌙</button>
+<div class="profile-menu">
+
+<div class="profile-icon" onclick="toggleProfileMenu()">
+👤
+</div>
+
+<div id="profileDropdown" class="profile-dropdown">
+
+<p id="userEmail">Loading...</p>
+
+<hr>
+
+<button onclick="logout()">Logout</button>
+
+</div>
+
+</div>
+
+<div class="container">
+
+<h1>Smart Footstep Energy Dashboard</h1>
+<div class="status" id="status">🔴 Offline</div>
+
+<div class="cards">
+
+<div class="card">
+<h2 id="steps">0</h2>
+<p>Total Steps</p>
+</div>
+
+<div class="card">
+<h2 id="power">0</h2>
+<p>Current Power (W)</p>
+</div>
+
+<div class="card">
+<h2 id="energy">0</h2>
+<p>Total Energy</p>
+</div>
+
+<div class="card">
+<h2 id="peak">0</h2>
+<p>Peak Power</p>
+</div>
+
+
+
+</div>
+
+<div class="graph-buttons">
+
+<button onclick="toggleGraph('stepsBox')">👣 Steps Graph</button>
+<button onclick="toggleGraph('energyBox')">⚡Energy Graph</button>
+<button onclick="toggleGraph('powerBox')">📈 Power Trend</button>
+<button onclick="toggleGraph('dailyBox')">📅 Daily Analytics</button>
+<button onclick="toggleGraph('weeklyBox')">📊 Weekly Analytics</button>
+<button onclick="toggleGraph('monthlyBox')">📆 Monthly Analytics</button>
+
+
+</div>
+
+<div id="stepsBox" class="graph-box">
+<canvas id="stepsChart"></canvas>
+</div>
+
+<div id="energyBox" class="graph-box">
+<canvas id="energyChart"></canvas>
+</div>
+
+<div id="powerBox" class="graph-box">
+<canvas id="powerTrendChart"></canvas>
+</div>
+
+<div id="dailyBox" class="graph-box">
+<canvas id="dailyChart"></canvas>
+</div>
+
+<div id="weeklyBox" class="graph-box">
+<canvas id="weeklyChart"></canvas>
+</div>
+
+<div id="monthlyBox" class="graph-box">
+<canvas id="monthlyChart"></canvas>
+</div>
+
+<div class="historyBox">
+
+<hr style="margin:40px 0; opacity:0.3;">
+
+<h2>📅 View Past Data</h2>
+
+<input type="date" id="datePicker">
+<button onclick="getHistory()">View History</button>
+
+<div id="historyResult" style="margin-top:20px;font-size:18px;"></div>
+
+</div>
+
+</div>
+
+<script>
+var database=firebase.database();
+
+/* GLOBAL VALUES */
+
+var lastDataTime = Date.now()
+var steps=0
+var energy=0
+var power=0
+var peak=0
+
+/* LIVE ARRAYS */
+
+var timeLabels=[]
+var stepsLive=[]
+var energyLive=[]
+var powerLive=[]
+
+/* CHARTS */
+
+var stepsChart=new Chart(document.getElementById("stepsChart"),{
+type:"line",
+data:{labels:timeLabels,datasets:[{label:"Steps",data:stepsLive,borderWidth:3}]},
+options:{responsive:true,scales:{y:{beginAtZero:true}}}
+})
+
+var energyChart=new Chart(document.getElementById("energyChart"),{
+type:"line",
+data:{labels:timeLabels,datasets:[{label:"Energy",data:energyLive,borderWidth:3}]},
+options:{responsive:true,scales:{y:{beginAtZero:true}}}
+})
+
+var powerTrendChart=new Chart(document.getElementById("powerTrendChart"),{
+type:"line",
+data:{labels:timeLabels,datasets:[{label:"Power",data:powerLive,borderWidth:3}]},
+options:{responsive:true,scales:{y:{beginAtZero:true}}}
+})
+
+
+
+/* LIVE FIREBASE */
+
+database.ref("project").on("value",function(snapshot){
+
+lastDataTime = Date.now()
+document.getElementById("status").innerText="🟢 LIVE"
+document.getElementById("status").style.background="#00c853"
+
+var data=snapshot.val()
+steps = Number(data.total_steps || 0)
+power = Number(data.current_power || 0)
+energy = Number(data.total_energy || 0)
+peak = Number(data.peak_power || 0)
+
+animateValue("steps", Number(document.getElementById("steps").innerText), steps, 500)
+animateValue("power", Number(document.getElementById("power").innerText), power.toFixed(6), 500)
+animateValue("energy", Number(document.getElementById("energy").innerText), energy.toFixed(6), 500)
+animateValue("peak", Number(document.getElementById("peak").innerText), peak.toFixed(6), 500)
+
+var time=new Date().toLocaleTimeString()
+
+timeLabels.push(time)
+stepsLive.push(steps)
+energyLive.push(energy)
+powerLive.push(power)
+
+if(timeLabels.length>20){
+timeLabels.shift()
+stepsLive.shift()
+energyLive.shift()
+powerLive.shift()
+}
+
+stepsChart.update()
+energyChart.update()
+powerTrendChart.update()
+
+})
+
+/* SAVE MINUTE DATA */
+
+var currentDate=new Date().toISOString().slice(0,10)
+
+/* SAVE MINUTE DATA + DAILY TOTAL */
+
+setInterval(function(){
+
+var now=new Date()
+var today=now.toISOString().slice(0,10)
+
+var h=now.getHours().toString().padStart(2,"0")
+var m=now.getMinutes().toString().padStart(2,"0")
+
+var time=h+":"+m
+
+/* DATE CHANGE DETECT */
+
+if(today!==currentDate){
+
+database.ref("project/dailyTotals/"+currentDate).set({
+total_steps:steps,
+total_energy:energy
+})
+
+currentDate=today
+
+}
+
+/* SAVE MINUTE HISTORY */
+
+database.ref("project/history/"+today+"/"+time).set({
+steps:steps,
+energy:energy,
+power:power
+})
+
+},60000)
+
+/* HISTORY GRAPH */
+
+function clearCharts(){
+
+stepsChart.data.labels=[]
+stepsChart.data.datasets[0].data=[]
+
+energyChart.data.labels=[]
+energyChart.data.datasets[0].data=[]
+
+powerTrendChart.data.labels=[]
+powerTrendChart.data.datasets[0].data=[]
+
+stepsChart.update()
+energyChart.update()
+powerTrendChart.update()
+
+}
+
+setInterval(function(){
+
+var now = new Date()
+
+if(now.getHours()==0 && now.getMinutes()==0){
+
+steps=0
+energy=0
+power=0
+
+document.getElementById("steps").innerText=0
+document.getElementById("energy").innerText=0
+document.getElementById("power").innerText=0
+
+}
+
+},60000)
+
+function getHistory(){
+
+clearCharts()
+
+var date=document.getElementById("datePicker").value
+
+database.ref("project/history/"+date).once("value",function(snapshot){
+
+if(!snapshot.exists()){
+
+document.getElementById("historyResult").innerHTML =
+"<p style='color:red'>No data found</p>"
+
+/* graphs clear */
+stepsChart.data.labels=[]
+stepsChart.data.datasets[0].data=[]
+energyChart.data.labels=[]
+energyChart.data.datasets[0].data=[]
+powerTrendChart.data.labels=[]
+powerTrendChart.data.datasets[0].data=[]
+stepsChart.update()
+energyChart.update()
+powerTrendChart.update()
+
+/* AUTO SCROLL TO RESULT */
+setTimeout(()=>{
+  document.getElementById("historyResult").scrollIntoView({
+    behavior: "smooth",
+    block: "center"
+  });
+},200);
+
+return
+}
+
+var data=snapshot.val()
+
+var labels=[]
+var s=[]
+var e=[]
+var p=[]
+
+var times=Object.keys(data).sort()
+
+times.forEach(function(t){
+labels.push(t)
+s.push(data[t].steps)
+e.push(data[t].energy)
+p.push(data[t].power)
+})
+
+stepsChart.data.labels=labels
+stepsChart.data.datasets[0].data=s
+energyChart.data.labels=labels
+energyChart.data.datasets[0].data=e
+powerTrendChart.data.labels=labels
+powerTrendChart.data.datasets[0].data=p
+
+stepsChart.update()
+energyChart.update()
+powerTrendChart.update()
+
+/* AUTO SCROLL TO CHART */
+setTimeout(()=>{
+  document.getElementById("stepsBox").scrollIntoView({
+    behavior: "smooth",
+    block: "center"
+  });
+},200);
+
+})
+}
+
+
+
+
+/* GRAPH TOGGLE */
+
+function toggleGraph(id){
+
+var box=document.getElementById(id)
+
+/* agar open hai to close */
+if(box.classList.contains("show")){
+box.classList.remove("show")
+
+setTimeout(()=>{
+box.style.display="none"
+},300)
+
+return
+}
+
+/* sab graph band */
+var boxes=["stepsBox","energyBox","powerBox","dailyBox","weeklyBox","monthlyBox"]
+
+boxes.forEach(function(b){
+
+var el=document.getElementById(b)
+
+if(el){
+el.classList.remove("show")
+el.style.display="none"
+}
+
+})
+
+/* selected graph open */
+box.style.display="block"
+
+setTimeout(()=>{
+box.classList.add("show")
+},10)
+
+/* IMPORTANT FIX */
+setTimeout(()=>{
+if(id==="dailyBox") dailyChart.resize()
+if(id==="weeklyBox") weeklyChart.resize()
+if(id==="monthlyBox") monthlyChart.resize()
+},200)
+
+/* scroll */
+setTimeout(()=>{
+box.scrollIntoView({
+behavior:"smooth",
+block:"center"
+})
+},200)
+
+}
+
+/* DAILY + WEEKLY */
+
+var dailyChart=new Chart(document.getElementById("dailyChart"),{
+type:"bar",
+data:{labels:[],datasets:[{label:"Daily Energy",data:[]}]}
+})
+
+
+var weeklyChart=new Chart(document.getElementById("weeklyChart"),{
+type:"bar",
+data:{labels:[],datasets:[{label:"Weekly Energy",data:[]}]}
+})
+
+var monthlyChart=new Chart(document.getElementById("monthlyChart"),{
+type:"bar",
+data:{labels:[],datasets:[{label:"Monthly Energy",data:[]}]},
+options:{responsive:true}
+})
+
+database.ref("project/history").once("value",function(snapshot){
+
+var data=snapshot.val()
+if(!data) return
+
+var dates=Object.keys(data).sort()
+
+/* ============== DAILY ============== */
+
+var dailyLabels=[]
+var dailyEnergy=[]
+
+dates.forEach(function(date){
+    var times = Object.keys(data[date]).sort()
+    var last = times[times.length-1]
+    dailyLabels.push(date)
+    dailyEnergy.push(data[date][last].energy)
+})
+
+dailyChart.data.labels = dailyLabels.slice(-7)
+dailyChart.data.datasets[0].data = dailyEnergy.slice(-7)
+dailyChart.update()
+
+
+/* ============== WEEKLY ============== */
+
+var weekLabels=[]
+var weekEnergy=[]
+
+var last7 = dates.slice(-7)
+
+last7.forEach(function(date){
+    var times = Object.keys(data[date]).sort()
+    var last = times[times.length-1]
+    weekLabels.push(date)
+    weekEnergy.push(data[date][last].energy)
+})
+
+weeklyChart.data.labels = weekLabels
+weeklyChart.data.datasets[0].data = weekEnergy
+weeklyChart.update()
+
+
+/* ============== MONTHLY ============== */
+
+var monthEnergy = {}
+
+dates.forEach(function(date){
+
+    var month = date.slice(0,7)
+    var times = Object.keys(data[date]).sort()
+    var last = times[times.length-1]
+    var energy = data[date][last].energy
+
+    if(!monthEnergy[month]){
+        monthEnergy[month] = 0
+    }
+
+    monthEnergy[month] += energy
+})
+
+monthlyChart.data.labels = Object.keys(monthEnergy)
+monthlyChart.data.datasets[0].data = Object.values(monthEnergy)
+monthlyChart.update()
+
+})
+
+/* WEEKLY ANALYTICS */
+
+
+function toggleTheme(){
+
+document.body.classList.toggle("light-mode")
+
+var btn=document.getElementById("themeBtn")
+
+if(document.body.classList.contains("light-mode")){
+btn.innerHTML="☀️"
+}else{
+btn.innerHTML="🌙"
+}
+
+}
+
+function animateValue(id, start, end, duration){
+
+if(start == end){
+document.getElementById(id).innerText=end
+return
+}
+
+let obj=document.getElementById(id)
+let range=end-start
+let increment=range/50
+let current=start
+
+let timer=setInterval(function(){
+
+current += increment
+
+if((increment>0 && current>=end) || (increment<0 && current<=end)){
+current=end
+clearInterval(timer)
+}
+
+if(id=="steps"){
+obj.innerText=Math.round(current)
+}else{
+obj.innerText=Number(current).toFixed(6)
+}
+
+},duration/50)
+
+}
+function logout(){
+
+firebase.auth().onAuthStateChanged(function(user){
+
+if(user){
+
+document.getElementById("userEmail").innerText=user.email
+
+}else{
+
+window.location="login.html"
+
+}
+
+});
+
+}
+
+window.addEventListener("beforeunload", function () {
+firebase.auth().signOut();
+});
+
+function toggleProfileMenu(){
+
+var menu=document.getElementById("profileDropdown")
+
+if(menu.style.display=="block"){
+menu.style.display="none"
+}else{
+menu.style.display="block"
+}
+
+}
+
+function logout(){
+
+firebase.auth().signOut().then(function(){
+
+window.location="login.html"
+
+})
+
+}
+
+setInterval(function(){
+
+var now = Date.now()
+
+if(now - lastDataTime > 5000){
+
+document.getElementById("status").innerText="🔴 Hardware Offline"
+document.getElementById("status").style.background="#ff0000"
+
+}
+
+},2000)
+</script>
+
+</body>
+</html>
